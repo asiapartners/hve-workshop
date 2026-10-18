@@ -3,7 +3,7 @@ title: Contributing Skills to HVE Core
 description: Requirements and standards for contributing skill packages to hve-core
 sidebar_position: 6
 author: Microsoft
-ms.date: 2026-08-19
+ms.date: 2026-10-12
 ms.topic: how-to
 keywords:
   - skills
@@ -266,86 +266,104 @@ This skill converts video files to optimized GIF animations using FFmpeg two-pas
 
 Lists installation requirements for each platform:
 
-```markdown
+The resulting `SKILL.md` uses `##` for the level-two `Prerequisites` heading and
+`###` for each level-three platform subsection. The following block shows the
+literal Markdown source.
+
+````markdown
 ## Prerequisites
 
 FFmpeg MUST be installed and available in your system PATH.
 
 ### macOS
 
-\`\`\`bash
+```bash
 brew install ffmpeg
-\`\`\`
+```
 
 ### Linux
 
-\`\`\`bash
+```bash
 sudo apt install ffmpeg
-\`\`\`
+```
 
 ### Windows
 
-\`\`\`powershell
+```powershell
 choco install ffmpeg
-\`\`\`
 ```
+````
 
 #### 4. Quick Start
 
 Shows basic usage with default settings:
 
-```markdown
+In the resulting `SKILL.md`, `## Quick Start` renders as a level-two heading.
+The following block shows the literal Markdown source.
+
+````markdown
 ## Quick Start
 
-\`\`\`bash
+```bash
 ./scripts/convert.sh input.mp4
-\`\`\`
 ```
+````
 
 #### 5. Parameters Reference (when scripts are included)
 
 Documents all configurable options with defaults. Include this section when the skill contains scripts with configurable parameters.
 
-```markdown
+In the resulting `SKILL.md`, `## Parameters` renders as a level-two heading.
+The following block shows the literal Markdown source.
+
+````markdown
 ## Parameters
 
 | Parameter | Default | Description  |
 |-----------|---------|--------------|
 | --fps     | 10      | Frame rate   |
 | --width   | 480     | Output width |
-```
+````
 
 #### 6. Script Reference (when scripts are included)
 
 Documents both bash and PowerShell usage. Include this section when the skill contains a `scripts/` directory.
 
-```markdown
+In the resulting `SKILL.md`, `## Script Reference` renders as a level-two
+heading and each `###` script heading renders as level three. The following
+block shows the literal Markdown source.
+
+````markdown
 ## Script Reference
 
 ### convert.sh (Bash)
 
-\`\`\`bash
+```bash
 ./convert.sh --input video.mp4 --fps 15
-\`\`\`
+```
 
 ### convert.ps1 (PowerShell)
 
-\`\`\`powershell
+```powershell
 ./convert.ps1 -InputPath video.mp4 -Fps 15
-\`\`\`
 ```
+````
 
 #### 7. Troubleshooting
 
 Common issues and solutions:
 
-```markdown
+In the resulting `SKILL.md`, `## Troubleshooting` renders as a level-two
+heading and `### Tool not found` renders as level three. The following block
+shows the literal Markdown source.
+
+````markdown
 ## Troubleshooting
 
 ### Tool not found
 
 Verify the dependency is in your PATH...
-```
+````
 
 #### 8. Attribution Footer
 
@@ -423,6 +441,11 @@ Python skill scripts require pytest:
 * When a Python skill has a `tests/` directory, `[tool.ruff.lint].select` in `pyproject.toml` MUST include `"I"` so isort enforcement is active for test files
 * Commit `uv.lock` alongside `pyproject.toml` at the skill root so Dependabot can resolve and patch Python dependencies under `.github/skills/**`
 * `npm run validate:skills` warns when `pyproject.toml` is present without `uv.lock`, and it fails when the validation run is executed with `-WarningsAsErrors`
+* To suppress a pip-audit finding that has no available fix or that the supplier disputes, add a `pip-audit-known-vulnerabilities.txt` file at the skill root, next to `pyproject.toml`
+  * The `pip-audit.yml` workflow runs with the skill root as its working directory and reads the file from there, so a file in any other location is ignored
+  * List one vulnerability ID per line (for example `PYSEC-2025-183`); blank lines and lines starting with `#` are skipped, and each remaining ID is passed to pip-audit as `--ignore-vuln`
+  * Precede each ID with a `#` comment that names the advisory, explains why it is suppressed, and states the condition for removing the entry, such as an upstream fix or a changed disposition
+  * See `.github/skills/experimental/tts-voiceover/pip-audit-known-vulnerabilities.txt` for a worked example
 
 <!-- cspell:ignore conftest mktemp -->
 Do not commit opaque binary test fixtures such as `.pptx` or `.xlsx` files. Binary

@@ -1,25 +1,37 @@
 ---
 title: HVE Core
-description: Hypervelocity Engineering prompt library for GitHub Copilot with convention-driven AI workflows and validated artifacts
+description: Agentic SDLC framework for context management, governance, shift-left engineering, reusable organizational knowledge, and consistent practices across teams
 author: Microsoft
-ms.date: 2026-08-13
+ms.date: 2026-10-02
 ms.topic: overview
 keywords:
   - hypervelocity engineering
   - github copilot
   - ai workflows
-  - prompt library
-estimated_reading_time: 5
+  - custom agents
+  - copilot instructions
+  - rpi methodology
+estimated_reading_time: 3
 ---
 
-HVE Core is a curated library of reusable prompts, agents, instructions, and skills that help teams build dependable, reviewable AI-assisted development workflows.
+## Hypervelocity Engineering (HVE) Core
 
-Use HVE Core when you want AI-assisted work to be repeatable, standards-aligned, and grounded in validated artifacts.
+<!-- markdownlint-disable MD013 -->
+[![CI Status](https://github.com/microsoft/hve-core/actions/workflows/release-stable.yml/badge.svg)](https://github.com/microsoft/hve-core/actions/workflows/release-stable.yml)
+[![CodeQL](https://github.com/microsoft/hve-core/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/microsoft/hve-core/actions/workflows/codeql-analysis.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/microsoft/hve-core/badge)](https://scorecard.dev/viewer/?uri=github.com/microsoft/hve-core)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11795/badge)](https://www.bestpractices.dev/projects/11795)
+[![License](https://img.shields.io/github/license/microsoft/hve-core)](./LICENSE)
+[![Documentation](https://img.shields.io/badge/docs-microsoft.github.io%2Fhve--core-blue)](https://microsoft.github.io/hve-core/)
+<!-- markdownlint-enable MD013 -->
 
-## Why Use HVE Core
+HVE Core helps teams ship faster with GitHub Copilot by combining specialized agents, reusable prompts, coding instructions, and validated skills into one workflow system.
 
-* Reusable prompts and agents for common engineering tasks
-* Clear conventions for AI-assisted research, planning, implementation, and review
+Use HVE Core when you want AI-assisted work to be repeatable, standards-aligned, and scalable across individuals and teams. HVE Core provides structured AI workflow building blocks:
+
+* Agents for specialized tasks such as research, planning, implementation, and review
+* Prompts for repeatable workflow entry points
+* Instructions that apply coding standards automatically
 * Skills that add reusable tool capabilities
 
 > [!CAUTION]
@@ -37,10 +49,21 @@ Use HVE Core when you want AI-assisted work to be repeatable, standards-aligned,
 [![Install HVE Core](https://img.shields.io/badge/VS%20Code-Install%20HVE%20Core-007ACC?logo=visualstudiocode&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=ise-hve-essentials.hve-core)
 <!-- markdownlint-enable MD036 -->
 
-1. Install [Visual Studio Code](https://code.visualstudio.com/) and [GitHub Copilot](https://github.com/features/copilot).
-2. Install the [HVE Core extension](https://marketplace.visualstudio.com/items?itemName=ise-hve-essentials.hve-core).
-3. Open any project and launch GitHub Copilot Chat (`Ctrl+Alt+I`).
-4. Select **RPI Agent** from the agent picker or run `/rpi`, then describe the task you want to complete.
+1. Install the [HVE Core extension](https://marketplace.visualstudio.com/items?itemName=ise-hve-essentials.hve-core) from the VS Code Marketplace.
+2. Open any project and launch GitHub Copilot Chat (`Ctrl+Alt+I`).
+3. Select **RPI Agent** from the agent picker, then describe the task you want to complete.
+
+> [!TIP]
+> Using GitHub Copilot CLI? Register the consolidated HVE Core marketplace and
+> install its plugin:
+>
+> ```bash
+> copilot plugin marketplace add microsoft/hve-core
+> copilot plugin install hve-core@hve-core
+> ```
+>
+> Duplicate same-name registration behavior can vary by Copilot CLI version. See
+> [CLI Plugins](docs/getting-started/methods/cli-plugins.md) for details.
 
 ## Choose Your Path
 
@@ -58,7 +81,6 @@ Use HVE Core when you want AI-assisted work to be repeatable, standards-aligned,
 | Browse docs by topic         | [docs/README.md](docs/README.md)                                   |
 | Explore agents               | [.github/CUSTOM-AGENTS.md](.github/CUSTOM-AGENTS.md)               |
 | Explore instructions         | [.github/instructions/README.md](.github/instructions/README.md)   |
-| Explore prompts              | [.github/prompts/README.md](.github/prompts/README.md)             |
 | Explore skills               | [.github/skills/](.github/skills/)                                 |
 
 ## Documentation

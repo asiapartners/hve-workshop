@@ -994,6 +994,47 @@ Describe 'Trusted source binding' -Tag 'Unit', 'SignerIsolation' {
         [string]$identity['run'] | Should -Match "EVENT_ACTOR_ID.*EXPECTED_ACTOR_ID"
     }
 
+    It 'Denies Actions cache access to the release producer and every job it runs' {
+        $document = Get-WorkflowDocument -Name 'release-vsix-publish.yml'
+        $document.Contains('cache-mode') | Should -BeTrue
+        [string]$document['cache-mode'] | Should -BeExactly 'none'
+        foreach ($jobName in @($document['jobs'].Keys)) {
+            $job = $document['jobs'][$jobName]
+            if ($job.Contains('cache-mode')) {
+                [string]$job['cache-mode'] | Should -BeExactly 'none' -Because "job '$jobName' must not widen cache access"
+            }
+        }
+    }
+
+    It 'Keeps every workflow the release producer calls within its cache-mode cap' {
+        # A called workflow that requests more cache access than the caller's
+        # explicit cap fails validation before the release starts. The pinned
+        # signer revision is a snapshot of the local signer file, so the local
+        # file stands in for the next snapshot.
+        $document = Get-WorkflowDocument -Name 'release-vsix-publish.yml'
+        $calledNames = @(foreach ($jobName in @($document['jobs'].Keys)) {
+                $uses = [string]$document['jobs'][$jobName]['uses']
+                if ($uses -match '^(?:\./|microsoft/hve-core/)\.github/workflows/([^@/]+\.ya?ml)(?:@[0-9a-f]{40})?$') {
+                    $Matches[1]
+                }
+            })
+        $calledNames | Should -Contain 'extension-provenance-signer.yml'
+        $calledNames | Should -Contain 'vex-attest.yml'
+        $calledNames | Should -Contain 'release-close-milestone.yml'
+        foreach ($calledName in ($calledNames | Sort-Object -Unique)) {
+            $called = Get-WorkflowDocument -Name $calledName
+            if ($called.Contains('cache-mode')) {
+                [string]$called['cache-mode'] | Should -BeExactly 'none' -Because "$calledName must not request cache access beyond the caller's cap"
+            }
+            foreach ($jobName in @($called['jobs'].Keys)) {
+                $job = $called['jobs'][$jobName]
+                if ($job.Contains('cache-mode')) {
+                    [string]$job['cache-mode'] | Should -BeExactly 'none' -Because "$calledName job '$jobName' must not request cache access beyond the caller's cap"
+                }
+            }
+        }
+    }
+
     It 'Authenticates source eligibility and exact governance without exposing the private key to source jobs' {
         $document = Get-WorkflowDocument -Name 'extension-provenance-signer.yml'
         $authorize = $document['jobs']['authorize']
@@ -1111,6 +1152,18 @@ Describe 'Trusted source binding' -Tag 'Unit', 'SignerIsolation' {
             Should -Not -Match 'poutine:ignore'
     }
 
+    It 'Acknowledges only the exact setup-uv package for its creator finding' -Tag 'Poutine' {
+        $config = Get-Content -LiteralPath (Join-Path $script:RepositoryRoot '.poutine.yml') -Raw -Encoding utf8 |
+            ConvertFrom-Yaml
+        $exceptions = @($config['skip'] | Where-Object {
+                @($_['rule']) -contains 'github_action_from_unverified_creator_used' -and
+                @($_['purl']) -contains 'pkg:githubactions/astral-sh/setup-uv'
+            })
+        $exceptions | Should -HaveCount 1
+        @($exceptions[0].Keys | Sort-Object) | Should -Be @('purl', 'rule')
+        [string[]]@($exceptions[0]['purl']) | Should -Be @('pkg:githubactions/astral-sh/setup-uv')
+    }
+
     It 'Verifies the event-default signer checkout before source execution' {
         $document = Get-WorkflowDocument -Name 'extension-provenance-signer.yml'
         $checkout = Get-NamedJobStep -Document $document -JobName 'package' -StepName 'Checkout code'
@@ -1134,6 +1187,171 @@ Describe 'Trusted source binding' -Tag 'Unit', 'SignerIsolation' {
         [string]$document['jobs']['validate-release']['outputs']['source-sha'] | Should -BeExactly '${{ steps.identity.outputs.source-sha }}'
         [string[]]@($document['jobs']['extension-provenance']['needs']) | Should -Contain 'validate-release'
         [string[]]@($document['jobs']['verify-provenance']['needs']) | Should -Contain 'validate-release'
+    }
+}
+
+Describe 'Poutine baseline triage and weekly coverage' -Tag 'Unit', 'Poutine' {
+    BeforeAll {
+        $script:PoutineConfig = Get-Content -LiteralPath (Join-Path $script:RepositoryRoot '.poutine.yml') -Raw -Encoding utf8 |
+            ConvertFrom-Yaml
+    }
+
+    It 'Acknowledges only the exact release-please package for its creator finding' {
+        $exceptions = @($script:PoutineConfig['skip'] | Where-Object {
+                @($_['rule']) -contains 'github_action_from_unverified_creator_used' -and
+                @($_['purl']) -contains 'pkg:githubactions/googleapis/release-please-action'
+            })
+        $exceptions | Should -HaveCount 1
+        @($exceptions[0].Keys | Sort-Object) | Should -Be @('purl', 'rule')
+        @($exceptions[0]['rule']) | Should -Be @('github_action_from_unverified_creator_used')
+        @($exceptions[0]['purl']) | Should -Be @('pkg:githubactions/googleapis/release-please-action')
+    }
+
+    It 'Keeps creator acknowledgments package-scoped after replacing EndBug' {
+        $exceptions = @($script:PoutineConfig['skip'] | Where-Object {
+                @($_['rule']) -contains 'github_action_from_unverified_creator_used'
+            })
+        foreach ($exception in $exceptions) {
+            @($exception.Keys | Sort-Object) | Should -Be @('purl', 'rule')
+            @($exception['rule']) | Should -Be @('github_action_from_unverified_creator_used')
+            @($exception['purl']) | Should -HaveCount 1
+            @('pkg:githubactions/googleapis/release-please-action', 'pkg:githubactions/astral-sh/setup-uv') |
+                Should -Contain $exception['purl'][0]
+        }
+        $labelSync = Get-WorkflowText -Name 'label-sync.yml'
+        $labelSync | Should -Not -Match 'EndBug/label-sync@'
+        $labelSync | Should -Match 'run: \./scripts/ci/Sync-RepositoryLabels\.ps1'
+        $labelSync | Should -Not -Match 'poutine:ignore'
+    }
+
+    It 'Scopes the marketplace checkout acknowledgment to preparation only' {
+        $exceptions = @($script:PoutineConfig['skip'] | Where-Object {
+                @($_['path']) -contains '.github/workflows/extension-marketplace-publish.yml'
+            })
+        $exceptions | Should -HaveCount 1
+        @($exceptions[0].Keys | Sort-Object) | Should -Be @('job', 'path', 'rule')
+        @($exceptions[0]['rule']) | Should -Be @('untrusted_checkout_exec')
+        @($exceptions[0]['path']) | Should -Be @('.github/workflows/extension-marketplace-publish.yml')
+        @($exceptions[0]['job']) | Should -Be @('prepare-publisher')
+    }
+
+    It 'Binds acknowledged publisher preparation to read-only immutable main content' {
+        $document = Get-WorkflowDocument -Name 'extension-marketplace-publish.yml'
+        $job = $document['jobs']['prepare-publisher']
+        @($job['permissions'].Keys) | Should -Be @('contents')
+        $job['permissions']['contents'] | Should -BeExactly 'read'
+        $job.Contains('environment') | Should -BeFalse
+        $checkout = Get-NamedJobStep -Document $document -JobName 'prepare-publisher' -StepName 'Checkout protected publisher commit'
+        $checkout['with']['ref'] | Should -BeExactly '${{ needs.validate-inputs.outputs.publisher-digest }}'
+        $checkout['with']['persist-credentials'] | Should -BeFalse
+        $verify = Get-NamedJobStep -Document $document -JobName 'prepare-publisher' -StepName 'Confirm protected publisher checkout'
+        $verify['env']['PUBLISHER_DIGEST'] | Should -BeExactly '${{ needs.validate-inputs.outputs.publisher-digest }}'
+        $verify['run'] | Should -Match 'git rev-parse HEAD'
+        $verify['run'] | Should -Match 'PUBLISHER_DIGEST.*!=.*CHECKOUT_DIGEST'
+        $steps = [string[]]@($job['steps'] | ForEach-Object { $_['name'] })
+        $install = @($job['steps'] | Where-Object { $_['run'] -match 'npm ci' })
+        $install | Should -HaveCount 1
+        $steps.IndexOf('Confirm protected publisher checkout') | Should -BeLessThan $steps.IndexOf($install[0]['name'])
+        $validation = Get-NamedJobStep -Document $document -JobName 'validate-inputs' -StepName 'Validate publication inputs'
+        $validation['run'] | Should -Match 'git/ref/heads/main'
+        $validation['run'] | Should -Match 'MAIN_TYPE.*!=.*commit'
+        (Get-JobStepText -Document $document -JobName 'prepare-publisher') -join "`n" |
+            Should -Not -Match 'secrets\.|azure/login@'
+    }
+
+    It 'Acknowledges only the empty-default PR-review permissions finding' {
+        $exceptions = @($script:PoutineConfig['skip'] | Where-Object {
+                @($_['rule']) -contains 'default_permissions_on_risky_events'
+            })
+        $exceptions | Should -HaveCount 1
+        @($exceptions[0].Keys | Sort-Object) | Should -Be @('path', 'rule')
+        @($exceptions[0]['rule']) | Should -Be @('default_permissions_on_risky_events')
+        @($exceptions[0]['path']) | Should -Be @('.github/workflows/pr-review.lock.yml')
+        $document = Get-WorkflowDocument -Name 'pr-review.lock.yml'
+        $document.Contains('permissions') | Should -BeTrue
+        $document['permissions'] | Should -BeOfType [System.Collections.IDictionary]
+        $document['permissions'].Count | Should -Be 0
+    }
+
+    It 'Reuses the advisory scanner weekly with minimum permissions and uploads' {
+        $document = Get-WorkflowDocument -Name 'weekly-security-maintenance.yml'
+        $document['on']['schedule'][0]['cron'] | Should -BeExactly '0 2 * * 0'
+        $document['on'].Contains('workflow_dispatch') | Should -BeTrue
+        $job = $document['jobs']['dangerous-workflow-scan']
+        $job['uses'] | Should -BeExactly './.github/workflows/dangerous-workflow-scan.yml'
+        @($job['permissions'].Keys | Sort-Object) | Should -Be @('contents', 'security-events')
+        $job['permissions']['contents'] | Should -BeExactly 'read'
+        $job['permissions']['security-events'] | Should -BeExactly 'write'
+        foreach ($inputName in @('soft-fail', 'poutine-soft-fail', 'upload-sarif', 'upload-artifact')) {
+            $job['with'][$inputName] | Should -BeTrue
+        }
+        $job.Contains('secrets') | Should -BeFalse
+        @($document['jobs']['summary']['needs']) | Should -Contain 'dangerous-workflow-scan'
+    }
+
+    It 'Reports CodeQL <CodeqlResult> and advisory scan <ScanResult> with targeted next steps' -ForEach @(
+        foreach ($codeqlResult in @('success', 'failure', 'cancelled', 'skipped')) {
+            foreach ($scanResult in @('success', 'failure', 'cancelled', 'skipped')) {
+                @{ CodeqlResult = $codeqlResult; ScanResult = $scanResult }
+            }
+        }
+    ) {
+        $document = Get-WorkflowDocument -Name 'weekly-security-maintenance.yml'
+        $step = Get-NamedJobStep -Document $document -JobName 'summary' -StepName 'Generate summary'
+        $step['env']['CODEQL_RESULT'] | Should -BeExactly '${{ needs.codeql-analysis.result }}'
+        $step['env']['WORKFLOW_SCAN_RESULT'] | Should -BeExactly '${{ needs.dangerous-workflow-scan.result }}'
+        $step['run'] | Should -Match 'workflowScanResult -ne ''success''.*hasIssues = \$true'
+        $step['run'] | Should -Match 'Advisory job success does not establish zero findings'
+        $step['run'] | Should -Not -Match 'All Clear!|security posture is excellent'
+        $environment = @{
+            THRESHOLD_DAYS = '30'
+            PINNING_SCORE = '100'
+            UNPINNED_COUNT = '0'
+            STALE_COUNT = '0'
+            CODEQL_RESULT = $CodeqlResult
+            WORKFLOW_SCAN_RESULT = $ScanResult
+            EVENT_NAME = 'schedule'
+            SERVER_URL = 'https://github.com'
+            REPO = 'example/repository'
+            RUN_ID = '1'
+            GITHUB_STEP_SUMMARY = (Join-Path $TestDrive "$CodeqlResult-$ScanResult.md")
+        }
+        $savedEnvironment = @{}
+        try {
+            foreach ($key in $environment.Keys) {
+                $savedEnvironment[$key] = [Environment]::GetEnvironmentVariable($key)
+                [Environment]::SetEnvironmentVariable($key, $environment[$key])
+            }
+            & ([scriptblock]::Create($step['run']))
+            $summary = Get-Content -LiteralPath $environment['GITHUB_STEP_SUMMARY'] -Raw
+            $summary | Should -Match ([regex]::Escape("$ScanResult (advisory; review logs and SARIF)"))
+            $summary | Should -Match 'Advisory job success does not establish zero findings'
+            if ($CodeqlResult -eq 'success' -and $ScanResult -eq 'success') {
+                $summary | Should -Match 'Dependency Checks Clear'
+                $summary | Should -Not -Match 'Next Steps'
+            }
+            else {
+                $summary | Should -Not -Match 'Dependency Checks Clear|analysis jobs completed'
+                $summary | Should -Match 'Next Steps'
+            }
+            if ($CodeqlResult -eq 'success') {
+                $summary | Should -Not -Match 'CodeQL analysis result was'
+            }
+            else {
+                $summary | Should -Match ([regex]::Escape("CodeQL analysis result was $CodeqlResult; review the codeql-analysis job logs"))
+            }
+            if ($ScanResult -eq 'success') {
+                $summary | Should -Not -Match 'Dangerous workflow scan result was'
+            }
+            else {
+                $summary | Should -Match ([regex]::Escape("Dangerous workflow scan result was $ScanResult; review the dangerous-workflow-scan job's scanner step logs and confirm the poutine-results artifact exists"))
+            }
+        }
+        finally {
+            foreach ($key in $savedEnvironment.Keys) {
+                [Environment]::SetEnvironmentVariable($key, $savedEnvironment[$key])
+            }
+        }
     }
 }
 
@@ -1537,11 +1755,19 @@ Describe 'Retained release reconciliation and OpenVEX' -Tag 'Unit', 'ReleaseReco
         [string[]]@($document['jobs']['publish-release']['needs']) | Should -Contain 'vex-attest'
     }
 
-    It 'Documents VSIX and VEX verification without a plugin ZIP instruction' {
+    It 'Documents source-bound subject-specific verification without a plugin ZIP instruction' {
         $notes = [string](Get-NamedJobStep -Document (Get-WorkflowDocument -Name 'release-vsix-publish.yml') `
                 -JobName 'append-verification-notes' -StepName 'Append verification section to release notes')['run']
         $notes | Should -Match 'gh attestation verify <file>\.vsix'
         $notes | Should -Match 'gh attestation verify hve-core\.openvex\.json'
+        $notes | Should -Match 'gh attestation verify dependencies\.spdx\.json'
+        $notes | Should -Match 'SOURCE_SHA=\$\(gh api'
+        @([regex]::Matches($notes, '--source-digest')) | Should -HaveCount 3
+        @([regex]::Matches($notes, '--source-ref')) | Should -HaveCount 3
+        $notes | Should -Match 'extension-provenance-signer\.yml'
+        $notes | Should -Match '3a09401536cef0c4559db1aa64b7d1010638fd67'
+        $notes | Should -Match 'SBOMs are\s+predicate payloads'
+        $notes | Should -Not -Match 'All release assets include.*build-provenance'
         $notes | Should -Not -Match '<file>\.zip'
     }
 
@@ -2277,6 +2503,150 @@ Describe 'Managed release identity postconditions' -Tag 'Unit' {
             }
         $result.ExitCode | Should -Not -Be 0
         $result.Output | Should -Match 'unexpected managed release identity'
+    }
+}
+
+Describe 'Copilot OTel static test selection' -Tag 'Unit' {
+    BeforeAll {
+        $script:PrValidation = Get-WorkflowDocument -Name 'pr-validation.yml'
+        $script:StaticSelection = [string]$script:PrValidation['jobs']['pytest']['with']['changed-paths-pattern']
+        $patternMatch = [regex]::Match($script:StaticSelection, "&& '([^']+)' \|\| ''")
+        if (-not $patternMatch.Success) {
+            throw 'Telemetry static changed-paths-pattern is not a conditional matrix expression'
+        }
+        $script:TelemetryStaticPattern = $patternMatch.Groups[1].Value
+    }
+
+    It 'Applies the custom pattern only to the telemetry matrix directory' {
+        $script:StaticSelection |
+            Should -Match "matrix\.directory == '\.github/skills/experimental/copilot-otel-metrics'"
+        $script:StaticSelection | Should -Match "\|\| ''"
+    }
+
+    It 'Selects the non-slow telemetry run for <Path>' -ForEach @(
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/examples/baseline.py' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/tests/test_local_config.py' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/uv.lock' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/pyproject.toml' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/examples/otel-collector-local.yaml' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/examples/compose.yaml' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/examples/dashboards/copilot-otel.json' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/examples/azure/main.bicep' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/examples/azure/main.tf' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/examples/azure/variables.tf' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/examples/azure/outputs.tf' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/examples/azure/otel-collector-config.yaml' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/examples/azure/agent-host-relay/otel-collector-config.yaml' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/examples/azure/agent-host-relay/compose.yaml' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/references/org-distribution.md' }
+    ) {
+        $Path | Should -Match $script:TelemetryStaticPattern
+    }
+
+    It 'Does not select the non-slow telemetry run for <Path>' -ForEach @(
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/examples/azure/versions.tf' }
+        @{ Path = '.github/skills/experimental/copilot-otel-metrics/examples/azure/deploy.sh' }
+        @{ Path = '.github/workflows/pytest-tests.yml' }
+        @{ Path = '.github/workflows/release-vsix-publish.yml' }
+    ) {
+        $Path | Should -Not -Match $script:TelemetryStaticPattern
+    }
+
+    It 'Leaves the strict runtime lane configuration unchanged' {
+        $runtime = $script:PrValidation['jobs']['copilot-otel-runtime-tests']['with']
+        $runtime['marker-expression'] | Should -Be 'slow'
+        $runtime['strict-runtime'] | Should -BeTrue
+        $runtime['artifact-suffix'] | Should -Be '-runtime'
+        $runtime['pre-pull-compose-file'] | Should -Be 'examples/compose.yaml'
+        $runtime['pre-pull-compose-service'] | Should -Be 'otel-collector'
+        $runtime['changed-paths-pattern'] | Should -Be '^\.github/skills/experimental/copilot-otel-metrics/(examples/.*\.(py|yaml)|examples/azure/agent-host-relay/.*\.yaml|tests/.*\.py|pyproject\.toml)$|^\.github/workflows/(pytest-tests|pr-validation)\.yml$'
+    }
+}
+
+Describe 'PR validation hosted conformance boundary' -Tag 'Unit' {
+    BeforeAll {
+        $script:PrValidation = Get-WorkflowDocument -Name 'pr-validation.yml'
+        $script:ConformanceJobs = @($script:PrValidation['jobs'].GetEnumerator() | Where-Object {
+                [string]$_.Value['uses'] -eq './.github/workflows/agent-conformance.yml'
+            })
+    }
+
+    It 'Leaves planner conformance to the shared scheduled workflow' {
+        $script:ConformanceJobs | Should -BeNullOrEmpty
+    }
+}
+
+Describe 'Markdown link PR gate contract' -Tag 'Unit' {
+    BeforeAll {
+        $script:MarkdownLinkWorkflow = Get-WorkflowDocument -Name 'markdown-link-check.yml'
+        $script:PrValidation = Get-WorkflowDocument -Name 'pr-validation.yml'
+    }
+
+    It 'Declares advisory external links as an opt-in reusable input' {
+        $workflowInput = $script:MarkdownLinkWorkflow['on']['workflow_call']['inputs']['external-links-as-warnings']
+
+        $workflowInput['type'] | Should -Be 'boolean'
+        $workflowInput['default'] | Should -BeFalse
+    }
+
+    It 'Passes the advisory external-link input to the checker' {
+        $step = Get-NamedJobStep `
+            -Document $script:MarkdownLinkWorkflow `
+            -JobName 'markdown-link-check' `
+            -StepName 'Run markdown link check'
+
+        [string]$step['env']['EXTERNAL_LINKS_AS_WARNINGS'] |
+            Should -Be '${{ inputs.external-links-as-warnings }}'
+        [string]$step['run'] | Should -Match "ExternalLinksAsWarnings"
+    }
+
+    It 'Hard-gates internal links while keeping external PR findings advisory' {
+        $inputs = $script:PrValidation['jobs']['markdown-link-check']['with']
+
+        $inputs['soft-fail'] | Should -BeFalse
+        $inputs['changed-files-only'] | Should -BeTrue
+        $inputs['external-links-as-warnings'] | Should -BeTrue
+    }
+}
+
+Describe 'AI artifact portability gate contract' -Tag 'Unit' {
+    BeforeAll {
+        $script:AiArtifactWorkflow = Get-WorkflowDocument -Name 'ai-artifact-validation.yml'
+    }
+
+    It 'Runs footer and portability validation independently before the final gate' {
+        $footerStep = Get-NamedJobStep `
+            -Document $script:AiArtifactWorkflow `
+            -JobName 'ai-artifact-validation' `
+            -StepName 'Validate AI artifact footers and disclaimers'
+        $portabilityStep = Get-NamedJobStep `
+            -Document $script:AiArtifactWorkflow `
+            -JobName 'ai-artifact-validation' `
+            -StepName 'Validate artifact path portability'
+        $gateStep = Get-NamedJobStep `
+            -Document $script:AiArtifactWorkflow `
+            -JobName 'ai-artifact-validation' `
+            -StepName 'Check results'
+
+        $footerStep['id'] | Should -Be 'planner-artifacts'
+        $footerStep['continue-on-error'] | Should -BeTrue
+        $portabilityStep['id'] | Should -Be 'artifact-portability'
+        $portabilityStep['continue-on-error'] | Should -BeTrue
+        [string]$portabilityStep['run'] | Should -Match 'Test-ArtifactPathPortability\.ps1'
+        [string]$gateStep['if'] | Should -Match "steps\.planner-artifacts\.outcome == 'failure'"
+        [string]$gateStep['if'] | Should -Match "steps\.artifact-portability\.outcome == 'failure'"
+        [string]$gateStep['if'] | Should -Match '!inputs\.soft-fail'
+    }
+
+    It 'Uploads both AI artifact validation result files' {
+        $uploadStep = Get-NamedJobStep `
+            -Document $script:AiArtifactWorkflow `
+            -JobName 'ai-artifact-validation' `
+            -StepName 'Upload results'
+        [string]$paths = $uploadStep['with']['path']
+
+        $paths | Should -Match 'logs/ai-artifact-results\.json'
+        $paths | Should -Match 'logs/artifact-path-portability-results\.json'
     }
 }
 

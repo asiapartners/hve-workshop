@@ -1,44 +1,61 @@
 ---
 title: Behavior Conformance Suite
-description: 'Tier 3 conformance evaluations for prompts, instructions, and skill behavior'
+description: 'Tier 3 conformance evaluations for instructions and skill behavior'
 author: HVE Core Team
-ms.date: 2026-09-04
+ms.date: 2026-10-07
 ---
 
 This directory hosts the behavior conformance suite. It is the only suite under `evals/` that ships in advisory mode by default: failures are reported in the pull request summary but do not block the build until each spec graduates per the graduation policy below.
 
 ## Purpose
 
-Behavior conformance answers a focused question per stimulus: *does the asset under test produce output that conforms to its documented contract?* It exercises three asset families:
+Behavior conformance answers a focused question per stimulus: *does the asset under test behave according to its documented contract?* Most stimuli assess model output. A smaller set also stages synthetic files and uses deterministic workspace graders to assess contained file effects.
 
-* Prompt conformance: verifies prompts in `.github/prompts/**/*.prompt.md` invoke the correct subagent identity, scope language, and structural sections.
 * Instruction conformance: verifies that instructions in `.github/instructions/**/*.instructions.md` are interpreted by the model in line with their `applyTo` and content rules.
 * Skill behavior: verifies that skill invocation produces the canonical artifacts and section headers each `SKILL.md` advertises across three stimulus shapes (knowledge, tool-trigger, bleed-detection).
 
-Each tier shares the same advisory contract and manifest-driven gating model as the other Tier 1/2 suites. Most stimuli use deterministic `output-matches` graders. `skill-behavior.eval.yaml` also uses one `prompt` model-judge grader for a semantic contract that regex cannot credibly assess.
+Each tier shares the same advisory contract and manifest-driven gating model as the other Tier 1/2 suites. Most stimuli use deterministic `output-matches` graders. Selected skill stimuli also use deterministic file and diff graders in isolated synthetic workspaces. `skill-behavior.eval.yaml` uses seven `prompt` model-judge graders for semantic contracts that deterministic checks cannot credibly assess.
 
 ## Spec inventory
 
 | Spec                       | Tier | Mode     | Stimuli | Category               | Status            |
 |----------------------------|------|----------|---------|------------------------|-------------------|
-| `prompts.eval.yaml`        | 3p   | Advisory | 53      | `behavior-conformance` | Active (Phase 9)  |
-| `instructions.eval.yaml`   | 3i   | Advisory | 64      | `behavior-conformance` | Active (Phase 11) |
-| `skill-behavior.eval.yaml` | 3s   | Advisory | 228     | `behavior-conformance` | Active (Phase 13) |
+| `instructions.eval.yaml`   | 3i   | Advisory | 78      | `behavior-conformance` | Active (Phase 11) |
+| `skill-behavior.eval.yaml` | 3s   | Advisory | 303     | `behavior-conformance` | Active (Phase 13) |
 
-The maintained `prompts.eval.yaml` inventory contains 53 stimuli across 48 prompt subjects. Coverage includes RPI orchestration, security review and planning, Design Thinking, Git operations, evaluation authoring, and VEX workflows. Backlog, work-item, and HVE Core pull request coverage moved to `skill-behavior.eval.yaml` when those workflows became skills.
+Prompt conformance coverage moved to `skill-behavior.eval.yaml` and the agent-behavior partials when the repository's prompts became skills or agent entry modes. The `vally-tests` skill still routes `prompt`-kind stimuli to `prompts.eval.yaml`, which it creates on first use.
 
-The maintained `instructions.eval.yaml` inventory contains 64 stimuli: 62 instruction-tagged stimuli across 46 instruction subjects, plus two `backlog-management` skill stimuli. Coverage spans:
+The maintained `instructions.eval.yaml` inventory contains 78 stimuli: 70 instruction-tagged stimuli across 52 instruction subjects, plus eight skill-tagged stimuli (six `mural` and two `backlog-management`). Coverage spans:
 
-* Delivery workflows: `ado-create-pull-request`, `ado-get-build-info`, `pull-request`.
+* Delivery workflows: the Azure DevOps pull request and build-info protocols in `backlog-management`, `git-merge`, and `pull-request`.
 * HVE-Core authoring: `commit-message`, `copilot-tracking`, `hve-builder`, `markdown`, `pull-request`, and `writing-style`.
 * RAI, Accessibility, and Security planning: `accessibility-identity`, `rai-identity`, `rai-risk-classification`, `backlog-handoff`, `sssc-assessment`, and `standards-mapping`.
-* Additional: `docusaurus-edits`, `dt-coach-telemetry`, `experiment-designer`, `disclaimer-language`.
+* Additional: `docusaurus-edits`, `dt-coach-telemetry`, `experiment-designer`, `disclaimer-language`, `skill-security-model`.
+* Language guidance: Rust test placement, naming, local HTTP mocks, and unit-test network isolation; Bicep sensitive-parameter and required-default conventions.
 
-The maintained `skill-behavior.eval.yaml` inventory contains 228 stimuli across 73 skill subjects. It covers RPI and HVE Builder workflows, including HVE Builder bounded-read, research-bridge, unavailable-bridge, read-only-review, and final-candidate behavior-gate decisions plus direct `rpi-challenger`, `rpi-plan-critique`, and pull-request preflight contracts.
+The maintained `skill-behavior.eval.yaml` inventory contains 303 stimuli across 83 skill subjects. It covers RPI and HVE Builder workflows, including HVE Builder bounded-read, research-bridge, unavailable-bridge, read-only-review, and review-pass ownership decisions plus direct `rpi-challenger`, `rpi-plan-critique`, and pull-request preflight contracts.
 
-The `backlog-plan` and `backlog-execute` workflow commands carry knowledge coverage plus a read-only boundary assertion and a mutation-safety assertion respectively. The retained `prompt-analyze`, `prompt-builder`, and `prompt-refactor` compatibility routes and other installed skill domains remain in advisory mode.
+The `backlog-plan` and `backlog-execute` workflow commands carry knowledge coverage plus a read-only boundary assertion and a mutation-safety assertion respectively. Other installed skill domains remain in advisory mode.
 
-The current branch-specific calibration status is not yet established for gating. Pass-rate and false-positive measurements are collected from advisory CI runs before graduation. Most stimuli use `output-matches` to check contract vocabulary and routing signals, while one skill stimulus uses `prompt` to assess a semantic changes-record contract.
+The current branch-specific calibration status is not yet established for gating. Pass-rate and false-positive measurements are collected from advisory CI runs before graduation. Most stimuli use `output-matches` to check contract vocabulary and routing signals, while seven skill graders use `prompt` model judgment for semantic contracts such as the changes-record contract.
+
+### Rust HTTP unit-test evidence boundary
+
+The Rust HTTP unit-test isolation stimulus is a recall-and-cite check. Its
+positive regex graders detect instruction routing, source-file unit-test
+placement, local mock-server vocabulary, and explicit DNS or non-loopback
+refusal language. A passing advisory result does not establish that generated
+Rust code follows the contract. Generation-shaped semantic grading remains
+deferred to the custom-grader work tracked under WI-16.
+
+Native evidence is separate. The operator-invoked
+`npm run ci:test:rust-network-isolation -- <arguments>` command accepts a
+prepared disposable crate and records source endpoint literals plus bounded
+resolver and socket evidence under an attested, digest-pinned Docker
+containment lifecycle. Empty attempt lists and textual endpoint extraction are
+not proof of absent network behavior. Non-attesting test seams cannot report
+`Passed`. The command has no owning workflow and never runs as part of this
+advisory suite.
 
 ## Pipeline integration
 
@@ -46,7 +63,7 @@ This suite follows the manifest-driven gating model established by DD-01:
 
 * Stimulus resolution is performed by `scripts/evals/Modules/StimulusIndex.psm1`, which already recognizes `kind: prompt` backlinks (added in Phase 9) alongside the existing `skill`, `agent`, and `instruction` kinds.
 * When the PR validation workflow's changed-artifact manifest contains at least one prompt, instruction, or skill, the existing `eval-execute` job in [`.github/workflows/pr-validation.yml`](../../.github/workflows/pr-validation.yml) dispatches the matching spec. No new workflow or per-suite job is introduced.
-* Named local reproduction: `npm run ci:eval:behavior-prompts` for the prompt suite, `npm run ci:eval:behavior-instructions` for the instruction suite, and `npm run ci:eval:behavior-skills` for the skill behavior suite.
+* Named local reproduction: `npm run ci:eval:behavior-instructions` for the instruction suite and `npm run ci:eval:behavior-skills` for the skill behavior suite.
 
 ## Advisory mode
 
@@ -74,9 +91,10 @@ Per **DD-23** and **DD-24**, most stimuli declare one or more `output-matches` g
 | Routing or attribution         | Per-stimulus regex        | Asserts the response selects or identifies the documented capability.        |
 | Scope or contract vocabulary   | Per-stimulus regex        | Asserts the response stays in scope and carries required contract terms.     |
 | Additional contract signal     | Per-stimulus regex        | Separately checks a material boundary, status, artifact, or handoff rule.    |
+| Contained workspace effect     | Per-stimulus file or diff | Checks expected files, content, or absence of workspace changes.             |
 | Model-judged semantic contract | Per-stimulus judge prompt | Assesses behavior that cannot be reduced credibly to deterministic patterns. |
 
-The behavior specs currently configure `output-matches` and one `prompt` grader. Vally's deterministic output family exposes `output-contains`, `output-not-contains`, `output-matches`, and `output-not-matches`. The CLI registers the LLM-backed `prompt` and `panel` graders on demand when a spec uses them. `orphan-files` and `valid-refs` are skill-hygiene checks run by `vally lint`; they are not eval grader types. This suite loads no custom grader plugin.
+The behavior specs configure deterministic output, file, and diff graders plus one `prompt` grader. The CLI registers LLM-backed graders on demand when a spec uses them. `orphan-files` and `valid-refs` are skill-hygiene checks run by `vally lint`; they are not eval grader types. This suite loads no custom grader plugin.
 
 ## Anti-patterns
 

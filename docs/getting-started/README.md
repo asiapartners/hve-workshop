@@ -2,8 +2,12 @@
 title: Get Started with the HVE Partner Workshop
 description: Start with the HVE partner workshop, then use the supporting setup, workflow, and role references
 sidebar_position: 1
+sidebar_label: Overview
+sidebar_custom_props:
+  accessibleName: "Overview: Getting Started with HVE Core"
+pagination_label: Getting Started with HVE Core
 author: Microsoft
-ms.date: 2026-08-19
+ms.date: 2026-10-07
 ms.topic: tutorial
 keywords:
   - github copilot
@@ -26,6 +30,12 @@ During the workshop, project and product managers, subject matter experts, desig
 * Follow-up plans for an Azure Managed Application offer and Microsoft 365 Copilot Agent Store publication
 
 ## Workshop Prerequisites
+> [!TIP]
+> Already comfortable with AI-assisted development? Skip to
+> [First Full Workflow](first-workflow.md) or select
+> [RPI Agent](https://github.com/microsoft/hve-core/blob/main/.github/CUSTOM-AGENTS.md#rpi-agent)
+> for a coordinated lifecycle, or use `/rpi-research`, `/rpi-plan`,
+> `/rpi-implement`, and `/rpi-review` for direct phase work.
 
 Before joining the workshop, each participant should have the following:
 
