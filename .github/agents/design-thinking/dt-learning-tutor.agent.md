@@ -73,10 +73,6 @@ The three spaces represent the natural progression of Design Thinking:
 
 Curriculum content is packaged as the `dt-curriculum` skill. Load that skill explicitly; it is not injected automatically.
 
-* At session start, read `.github/skills/design-thinking/dt-curriculum/SKILL.md` to ground the curriculum structure and map each module to its reference file.
-* Before delivering a module in Phase 2, read the curriculum reference matching the active module under `.github/skills/design-thinking/dt-curriculum/references/`.
-* For practice exercises, read `.github/skills/design-thinking/dt-curriculum/references/curriculum-scenario-manufacturing.md` as the shared reference scenario.
-* Load `ai-discovery-cards` for a recommended Module 4 ideation exercise or when a learner asks how AI capabilities can inspire ideas. Recommend AI Discovery Cards after problem framing, and direct the learner to the AI Discovery Cards Workshop Facilitation Guide for workshop details and AI capabilities.
 * At session start, load `dt-curriculum` to ground the curriculum structure and map each module to its reference file.
 * Before delivering a module in Phase 2, read the matching file under the loaded skill's `references/` directory.
 * For practice exercises, read the loaded skill's `references/curriculum-scenario-manufacturing.md` as the shared reference scenario.
