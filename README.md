@@ -6,6 +6,7 @@ ms.date: 2026-10-02
 ms.topic: overview
 keywords:
   - hypervelocity engineering
+  - prompt engineering
   - github copilot
   - ai workflows
   - custom agents
@@ -18,6 +19,7 @@ estimated_reading_time: 3
 
 <!-- markdownlint-disable MD013 -->
 [![CI Status](https://github.com/microsoft/hve-core/actions/workflows/release-stable.yml/badge.svg)](https://github.com/microsoft/hve-core/actions/workflows/release-stable.yml)
+[![Main SBOM](https://github.com/microsoft/hve-core/actions/workflows/dependency-review.yml/badge.svg?branch=main)](https://github.com/microsoft/hve-core/actions/workflows/dependency-review.yml?query=branch%3Amain)
 [![CodeQL](https://github.com/microsoft/hve-core/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/microsoft/hve-core/actions/workflows/codeql-analysis.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/microsoft/hve-core/badge)](https://scorecard.dev/viewer/?uri=github.com/microsoft/hve-core)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11795/badge)](https://www.bestpractices.dev/projects/11795)
@@ -25,29 +27,29 @@ estimated_reading_time: 3
 [![Documentation](https://img.shields.io/badge/docs-microsoft.github.io%2Fhve--core-blue)](https://microsoft.github.io/hve-core/)
 <!-- markdownlint-enable MD013 -->
 
-HVE Core helps teams ship faster with GitHub Copilot by combining specialized agents, reusable prompts, coding instructions, and validated skills into one workflow system.
+HVE Core is a highly opinionated agentic software development lifecycle (SDLC) framework. Its core value lies in context management, governance, reusable organizational knowledge, and consistent engineering practices across teams
 
-Use HVE Core when you want AI-assisted work to be repeatable, standards-aligned, and scalable across individuals and teams. HVE Core provides structured AI workflow building blocks:
+HVE Core encodes engineering patterns into the workflow itself so they become part of the development process. Skills and workflows make expertise reusable by systematically bringing security requirements, approximately 80 standards, compliance processes, architecture reviews, and organizational practices into engineering work.
+
+The central principle driving HVE Core is **"AI carries the rules, humans keep the judgment."** AI carries relevant context, standards, and process guidance through the workflow. People remain responsible for judgment, tradeoffs, review, and decision-making.
+
+HVE Core provides structured workflow building blocks:
 
 * Agents for specialized tasks such as research, planning, implementation, and review
-* Prompts for repeatable workflow entry points
 * Instructions that apply coding standards automatically
-* Skills that add reusable tool capabilities
+* Skills that add reusable workflows and tool capabilities, including entry points you run as slash commands
 
 > [!CAUTION]
-> HVE Core is a rapidly evolving agentic SDLC framework. It is a source of patterns and learning. You would need to develop further enhancements to deploy for production.
->
-> As the technology landscape evolves, workflows, interfaces, architecture, and recommended practices may change substantially, including in ways that are not backward compatible. Evaluate all materials for your own requirements and risk tolerance.
->
+> HVE Core is a highly opinionated, rapidly evolving agentic SDLC framework. It is best treated as a source of patterns and learning rather than a stable platform, foundation, or production dependency.
+> Workflows, interfaces, architecture, and recommended practices may change substantially, including in ways that are not backward compatible, as the technology landscape evolves. Evaluate all materials for your own requirements and risk tolerance.
 > The HVE Builder skill (use with `/hve-builder`) and GitHub Copilot can help you adapt or copy relevant patterns into an agentic SDLC that you own and maintain independently.
->
 > To build an independent implementation, start with [Forking and Extending HVE Core](docs/customization/forking.md) and review the [HVE Core documentation](docs/README.md) before adopting any component.
 
-## Quick Start
+## Where to Start
 
 <!-- markdownlint-disable MD013 -->
 [![Install HVE Core](https://img.shields.io/badge/VS%20Code-Install%20HVE%20Core-007ACC?logo=visualstudiocode&logoColor=white)](https://marketplace.visualstudio.com/items?itemName=ise-hve-essentials.hve-core)
-<!-- markdownlint-enable MD036 -->
+<!-- markdownlint-enable MD013 -->
 
 1. Install the [HVE Core extension](https://marketplace.visualstudio.com/items?itemName=ise-hve-essentials.hve-core) from the VS Code Marketplace.
 2. Open any project and launch GitHub Copilot Chat (`Ctrl+Alt+I`).
@@ -68,14 +70,14 @@ Use HVE Core when you want AI-assisted work to be repeatable, standards-aligned,
 ## Choose Your Path
 
 * New to HVE-Core: Start with [Start Here](docs/getting-started/README.md) to complete your first workflow quickly.
-* Microsoft Partner Workshop: Follow the [Getting Started with HVE Partner Workshop](docs/getting-started/README.md) for workshop-specific onboarding.
 * Leading a team: Use the [Team Adoption Guide](docs/customization/team-adoption.md) to roll out standards and onboarding.
 * Contributing to this repo: Follow the [Contributing Guide](CONTRIBUTING.md) to add or improve agents, prompts, instructions, and skills.
 
 ## Navigate This Repository
 
+| Goal                         | Go here                                                            |
 |------------------------------|--------------------------------------------------------------------|
-| Start with the partner workshop | [docs/getting-started/README.md](docs/getting-started/README.md)   |
+| Getting Started              | [docs/getting-started/README.md](docs/getting-started/README.md)   |
 | Understand all setup options | [docs/getting-started/install.md](docs/getting-started/install.md) |
 | Learn the core methodology   | [docs/rpi/README.md](docs/rpi/README.md)                           |
 | Browse docs by topic         | [docs/README.md](docs/README.md)                                   |
@@ -111,6 +113,31 @@ We appreciate contributions! Whether you're fixing typos or adding new component
 ## Responsible AI
 
 Microsoft encourages customers to review its Responsible AI Standard when developing AI-enabled systems to ensure ethical, safe, and inclusive AI practices. Learn more at [Microsoft's Responsible AI](https://www.microsoft.com/ai/responsible-ai).
+
+## Legal
+
+This project is licensed under the [MIT License](./LICENSE).
+
+### Licensing
+
+Most content in this repository is covered by the MIT License. Certain skill content
+derived from OWASP Foundation publications is licensed under
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). Each affected
+skill identifies its license in frontmatter and includes a Third-Party Attribution
+section. See [THIRD-PARTY-NOTICES](./THIRD-PARTY-NOTICES) for full details.
+
+See [SECURITY.md](./SECURITY.md) for the security policy and vulnerability reporting.
+
+See [GOVERNANCE.md](./GOVERNANCE.md) for the project governance model.
+
+See [TRANSPARENCY-NOTE.md](./TRANSPARENCY-NOTE.md) for the Responsible AI Transparency Note covering intended uses, limitations, and the responsibility boundary between HVE Core and the host platform.
+
+## Trademark Notice
+
+> This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
+> trademarks or logos is subject to and must follow Microsoft's Trademark & Brand Guidelines. Use of Microsoft trademarks or logos in
+> modified versions of this project must not cause confusion or imply Microsoft sponsorship. Any use of third-party trademarks or
+> logos are subject to those third-party's policies.
 
 ---
 

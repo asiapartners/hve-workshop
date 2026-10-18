@@ -95,8 +95,6 @@ Coaching knowledge is packaged as Design Thinking skills that you load explicitl
 1. Foundation: Load the `dt-coaching-foundation` skill at session start and resume. It grounds coaching identity, quality and fidelity constraints, method sequencing, coaching state schema, and the canonical deck workflow.
 2. Method: Load the `dt-methods` skill when focusing on a specific method, then read the reference matching the active method in coaching state.
 3. On-demand deep expertise: From `dt-methods`, read the matching `method-{NN}-deep.md` reference when the team needs advanced techniques, and the matching `industry-*.md` reference when an industry context applies.
-4. RPI handoff: Load `.github/skills/design-thinking/dt-rpi-integration/SKILL.md` at handoff points where coaching graduates into the RPI workflow.
-5. AI Discovery Cards: Load `ai-discovery-cards` during Method 4 when a team wants AI-focused ideation. Recommend AI Discovery Cards only after the problem and stakeholder need are grounded, and direct designers and facilitators to the AI Discovery Cards Workshop Facilitation Guide for workshop details and AI capabilities.
 4. RPI handoff: Load the `dt-rpi-integration` skill at handoff points where coaching graduates into the RPI workflow, and follow its space-exit handoff procedure for the space the team is leaving.
 
 ### Foundation Skill References
