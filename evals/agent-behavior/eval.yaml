@@ -1175,6 +1175,14 @@ stimuli:
     Without editing files, briefly outline the business goals, scope, and
     success metrics for a self-service password reset BRD. State the paths
     where the BRD and its session state would be written.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/project-planning/brd-builder.agent.md
+      dest: .github/copilot-instructions.md
+    skills:
+    - ../../.github/skills/shared/disclaimer-language
+    - ../../.github/skills/shared/untrusted-content-boundary
+    - ../../.github/skills/project-planning/requirements-author
   tags:
     category: agent-behavior
     agent: brd-builder
@@ -2383,7 +2391,7 @@ stimuli:
   - type: output-matches
     name: fallback-allows-one-bounded-unchanged-read
     config:
-      pattern: (?is)^(?=[\s\S]*(?:(?:one|once|single)[^.\r\n]{0,240}(?:current|head|working[- ]tree)[- ]?(?:source|revision|copy|read)|(?:current|head|working[- ]tree)[- ]?(?:source|revision|copy|read)[^.\r\n]{0,240}(?:one|once|single)))(?=[\s\S]*(?:bounded|limited))(?=[\s\S]*(?:unchanged|outside (?:every |the )?(?:changed )?hunk|outside (?:the )?diff))(?=[\s\S]*(?:owner|FR-008|metadata))
+      pattern: (?is)^(?=[\s\S]*(?:(?:one|once|single)[^.\r\n]{0,240}(?:current|head|working[- ]tree)[- ]?(?:source|revision|copy|read|PRD|document|file|version)|(?:current|head|working[- ]tree)[- ]?(?:source|revision|copy|read|PRD|document|file|version)[^.\r\n]{0,240}(?:one|once|single)))(?=[\s\S]*(?:bounded|limited))(?=[\s\S]*(?:unchanged|outside (?:every |the )?(?:changed )?hunk|outside (?:the )?diff))(?=[\s\S]*(?:owner|FR-008|metadata))
   - type: output-matches
     name: fallback-uses-removed-lines-for-modified-passage
     config:
@@ -5737,26 +5745,42 @@ stimuli:
       pattern: (?i)^\s*['"`]?(?:the\s+)?(?:calling\s+|hve\s+builder\s+)?parent['"`]?[.!]?\s*$
 - name: hve-demo-material-class-recipe
   prompt: |
-    Plan the L100 demo deck and narrated video for HVE Core. List the phases
-    from sourcing to the finished MP4, and state the narration engine and the
-    duration contract you will use. Write the plan under
-    `.copilot-tracking/demo-material/` and report the path.
+    Plan the L100 demo deck and narrated video for HVE Core. This is a plan
+    only, so don't run setup or prerequisite checks and don't build
+    anything yet. List the phases from sourcing to the finished MP4, and
+    state the narration engine and the duration contract you will use.
+    Write the plan under `.copilot-tracking/demo-material/`, report the
+    path, and show the phases and the duration contract in your reply as
+    well.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/experimental/hve-demo-material.agent.md
+      dest: .github/copilot-instructions.md
+    skills:
+    - ../../.github/skills/experimental/hve-demo-material
   tags:
     category: agent-behavior
     agent: hve-demo-material
+  constraints:
+    max_agent_duration: 240s
+    max_duration: 300s
   graders:
-  - type: output-matches
+  - type: transcript-matches
     name: hve-demo-material-class-recipe-phase-marker-present
     config:
-      pattern: (?im)(^\s*(#{2,3}\s|step\s+\d+|phase\s+\d+|\d+[.)])|\|\s*\d+\s*[—–-]|\bphases?\b)
-  - type: output-matches
+      pattern: (?im)(?:^[ \t]*(?:#{2,4}[ \t]|(?:step|phase)[ \t]+\d+|\d+[.)][ \t]|[-*+][ \t]|\|[ \t]*[^\s|:-])[^\n]*?\b(?:sources?|sourcing|storyboard|storyboards|deck|decks|slides?|narrate|narration|narrated|capture|captures|captured|render|rendering|rendered|captions?|subtitles?|assemble|assembly|assembled|mp4|video|finalize|finalized|finalization|verify|verification|export|exported|frames?)\b(?:[\s\S]*?^[ \t]*(?:#{2,4}[ \t]|(?:step|phase)[ \t]+\d+|\d+[.)][ \t]|[-*+][ \t]|\|[ \t]*[^\s|:-])[^\n]*?\b(?:sources?|sourcing|storyboard|storyboards|deck|decks|slides?|narrate|narration|narrated|capture|captures|captured|render|rendering|rendered|captions?|subtitles?|assemble|assembly|assembled|mp4|video|finalize|finalized|finalization|verify|verification|export|exported|frames?)\b){2}|^(?=[^\n]*\b(?:sources?|sourcing|storyboard|storyboards|deck|decks|slides?|narrate|narration|narrated|capture|captures|captured|render|rendering|rendered|captions?|subtitles?|assemble|assembly|assembled|mp4|video|finalize|finalized|finalization|verify|verification|export|exported|frames?)\b)[^\n]*?(?:→|->)[^\n]*?(?:→|->)[^\n]*?(?:→|->))
+  - type: transcript-matches
     name: hve-demo-material-class-recipe-tracking-file-write
     config:
-      pattern: (?i)\.copilot-tracking[-/\\](demo-material|plans)
-  - type: output-matches
+      pattern: (?i)\.copilot-tracking[-/\\](?:demo-material|plans)[/\\][^\s`'")\]]+\.(?:md|json|ya?ml)
+  - type: file-exists
+    name: hve-demo-material-class-recipe-plan-file-exists
+    config:
+      path: .copilot-tracking/{demo-material,plans}/**/*.{md,json,yml,yaml}
+  - type: transcript-matches
     name: hve-demo-material-class-recipe-duration-contract
     config:
-      pattern: (?i)\b(4\s*(to|-|–)\s*6\s*min|duration contract)
+      pattern: (?i)\b(?:4|four)\s*(?:to|-|–|—|and)\s*(?:6|six)[\s-]*min|\b(?:min|minimum)\s*[:=]\s*4\b[\s\S]{0,40}?\b(?:max|maximum)\s*[:=]\s*6\b
   - type: output-matches
     name: hve-demo-material-class-recipe-no-source-edit
     config:
@@ -6105,93 +6129,20 @@ stimuli:
     name: no-draft-creation
     config:
       pattern: (?is)(do not|will not|cannot|without).{0,100}(CreateDraftMessage|create.{0,20}draft)
-- name: pptx-subagent-task-and-paths
-  prompt: |
-    You are the PowerPoint task-executor subagent. The PowerPoint Builder
-    orchestrator hands you this input:
-      - task: build-deck
-      - working_directory: .copilot-tracking/ppt/2026-05-28/quarterly-review/
-      - content_yaml: .copilot-tracking/ppt/2026-05-28/quarterly-review/content.yml
-      - mode: full
-    Acknowledge the task, name the working directory and execution log path,
-    and report your task status and the files you create or modify.
-  tags:
-    category: agent-behavior
-    advisory: "true"
-    agent: pptx-subagent
-  graders:
-  - type: output-matches
-    name: task-type-acknowledged
-    config:
-      pattern: (?i)\b(extract|build-content|build-deck|validate|export)\b
-  - type: output-matches
-    name: working-directory-format
-    config:
-      pattern: (?i)\.copilot-tracking[-/\\]ppt[-/\\]\d{4}-\d{2}-\d{2}[-/\\]
-  - type: output-matches
-    name: status-from-allowed-set
-    config:
-      pattern: (?i)\b(complete|partial|blocked)\b
-  - type: output-matches
-    name: files-listed
-    config:
-      pattern: (?i)files (created|modified)
-- name: pptx-subagent-partial-rebuild-flags
-  prompt: |
-    You are the PowerPoint task-executor subagent. The orchestrator hands you
-    this input:
-      - task: build-deck
-      - working_directory: .copilot-tracking/ppt/2026-05-28/quarterly-review/
-      - mode: partial
-      - source_deck: .copilot-tracking/ppt/2026-05-28/quarterly-review/deck.pptx
-      - slides_to_rebuild: [3, 4]
-    Describe how you will rebuild only the specified slides while preserving
-    the rest of the deck, and report your task status.
-  tags:
-    category: agent-behavior
-    advisory: "true"
-    agent: pptx-subagent
-  graders:
-  - type: output-matches
-    name: partial-rebuild-flags
-    config:
-      pattern: (?i)--source
-  - type: output-matches
-    name: slides-flag
-    config:
-      pattern: (?i)--slides
-  - type: output-matches
-    name: no-template-flag
-    config:
-      pattern: (?i)--template
-      negate: true
-- name: pptx-class-recipe
-  prompt: |
-    Plan a 5-slide PowerPoint deck about "Q1 engineering velocity highlights." List the three phases of the deck build. Write the plan under `.copilot-tracking/ppt/` and report the path.
-    In your response, list the three phase headings before reporting the path.
-  tags:
-    category: agent-behavior
-    agent: pptx
-  graders:
-  - type: output-matches
-    name: pptx-class-recipe-phase-marker-present
-    config:
-      pattern: (?im)(^\s*(#{2,3}\s|step\s+\d+|phase\s+\d+|\d+[.)])|\|\s*\d+\s*[—–-]|\bphases?\b)
-  - type: output-matches
-    name: pptx-class-recipe-tracking-file-write
-    config:
-      pattern: (?i)\.copilot-tracking[-/\\](ppt|plans)
-  - type: output-matches
-    name: pptx-class-recipe-no-source-edit
-    config:
-      pattern: (?i)(?<!(?:\b(?:not|never|without)|n[\x27\u2019]t)\s+(?:(?:yet|ever|actually|explicitly|intentionally|really|previously)\s+)*)\b(?:created|wrote|modified|edited|patched|added)\s+\S{0,40}(?:\.cs|\.py|\.ts|\.js|package\.json)\b
-      negate: true
 - name: prd-builder-class-recipe
   prompt: |
     Without editing files, briefly outline user stories and success criteria
     for a notification preferences PRD covering in-app, email, and SMS
     toggles. State the paths where the PRD and its session state would be
     written.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/project-planning/prd-builder.agent.md
+      dest: .github/copilot-instructions.md
+    skills:
+    - ../../.github/skills/shared/disclaimer-language
+    - ../../.github/skills/shared/untrusted-content-boundary
+    - ../../.github/skills/project-planning/requirements-author
   tags:
     category: agent-behavior
     agent: prd-builder
@@ -6579,12 +6530,12 @@ stimuli:
     files:
     - src: ../../.github/agents/rai-planning/rai-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/rai-planning/rai-identity.instructions.md
-      dest: .github/instructions/rai-planning/rai-identity.instructions.md
-    - src: ../../.github/instructions/shared/planner-identity-base.instructions.md
-      dest: .github/instructions/shared/planner-identity-base.instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/project-planning/rai-planner/references/rai-identity.md
+      dest: .github/skills/project-planning/rai-planner/references/rai-identity.md
+    - src: ../../.github/skills/shared/planner-identity/SKILL.md
+      dest: .github/skills/shared/planner-identity/SKILL.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: ../../.github/instructions/rai-planning/rai-license-posture.instructions.md
       dest: .github/instructions/rai-planning/rai-license-posture.instructions.md
     - src: ../../.github/instructions/shared/coaching-patterns.instructions.md
@@ -6643,12 +6594,12 @@ stimuli:
     files:
     - src: ../../.github/agents/rai-planning/rai-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/rai-planning/rai-identity.instructions.md
-      dest: .github/instructions/rai-planning/rai-identity.instructions.md
-    - src: ../../.github/instructions/shared/planner-identity-base.instructions.md
-      dest: .github/instructions/shared/planner-identity-base.instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/project-planning/rai-planner/references/rai-identity.md
+      dest: .github/skills/project-planning/rai-planner/references/rai-identity.md
+    - src: ../../.github/skills/shared/planner-identity/SKILL.md
+      dest: .github/skills/shared/planner-identity/SKILL.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: ../../.github/instructions/rai-planning/rai-license-posture.instructions.md
       dest: .github/instructions/rai-planning/rai-license-posture.instructions.md
     - src: ../../.github/instructions/shared/coaching-patterns.instructions.md
@@ -6678,10 +6629,10 @@ stimuli:
     files:
     - src: ../../.github/agents/rai-planning/rai-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
-    - src: ../../.github/instructions/rai-planning/rai-identity.instructions.md
-      dest: .github/instructions/rai-planning/rai-identity.instructions.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
+    - src: ../../.github/skills/project-planning/rai-planner/references/rai-identity.md
+      dest: .github/skills/project-planning/rai-planner/references/rai-identity.md
   tags:
     category: agent-behavior
     advisory: "true"
@@ -6709,12 +6660,12 @@ stimuli:
     files:
     - src: ../../.github/agents/rai-planning/rai-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/rai-planning/rai-identity.instructions.md
-      dest: .github/instructions/rai-planning/rai-identity.instructions.md
-    - src: ../../.github/instructions/shared/planner-identity-base.instructions.md
-      dest: .github/instructions/shared/planner-identity-base.instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/project-planning/rai-planner/references/rai-identity.md
+      dest: .github/skills/project-planning/rai-planner/references/rai-identity.md
+    - src: ../../.github/skills/shared/planner-identity/SKILL.md
+      dest: .github/skills/shared/planner-identity/SKILL.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: ../../.github/instructions/rai-planning/rai-license-posture.instructions.md
       dest: .github/instructions/rai-planning/rai-license-posture.instructions.md
     - src: ../../.github/instructions/shared/coaching-patterns.instructions.md
@@ -6767,12 +6718,12 @@ stimuli:
     files:
     - src: ../../.github/agents/rai-planning/rai-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/rai-planning/rai-identity.instructions.md
-      dest: .github/instructions/rai-planning/rai-identity.instructions.md
-    - src: ../../.github/instructions/shared/planner-identity-base.instructions.md
-      dest: .github/instructions/shared/planner-identity-base.instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/project-planning/rai-planner/references/rai-identity.md
+      dest: .github/skills/project-planning/rai-planner/references/rai-identity.md
+    - src: ../../.github/skills/shared/planner-identity/SKILL.md
+      dest: .github/skills/shared/planner-identity/SKILL.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: ../../.github/instructions/rai-planning/rai-license-posture.instructions.md
       dest: .github/instructions/rai-planning/rai-license-posture.instructions.md
     - src: ../../.github/instructions/shared/coaching-patterns.instructions.md
@@ -6864,12 +6815,12 @@ stimuli:
     files:
     - src: ../../.github/agents/rai-planning/rai-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/rai-planning/rai-identity.instructions.md
-      dest: .github/instructions/rai-planning/rai-identity.instructions.md
-    - src: ../../.github/instructions/shared/planner-identity-base.instructions.md
-      dest: .github/instructions/shared/planner-identity-base.instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/project-planning/rai-planner/references/rai-identity.md
+      dest: .github/skills/project-planning/rai-planner/references/rai-identity.md
+    - src: ../../.github/skills/shared/planner-identity/SKILL.md
+      dest: .github/skills/shared/planner-identity/SKILL.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: ../../.github/instructions/rai-planning/rai-license-posture.instructions.md
       dest: .github/instructions/rai-planning/rai-license-posture.instructions.md
     - src: ../../.github/instructions/shared/coaching-patterns.instructions.md
@@ -6935,12 +6886,12 @@ stimuli:
     files:
     - src: ../../.github/agents/rai-planning/rai-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/rai-planning/rai-identity.instructions.md
-      dest: .github/instructions/rai-planning/rai-identity.instructions.md
-    - src: ../../.github/instructions/shared/planner-identity-base.instructions.md
-      dest: .github/instructions/shared/planner-identity-base.instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/project-planning/rai-planner/references/rai-identity.md
+      dest: .github/skills/project-planning/rai-planner/references/rai-identity.md
+    - src: ../../.github/skills/shared/planner-identity/SKILL.md
+      dest: .github/skills/shared/planner-identity/SKILL.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: ../../.github/instructions/rai-planning/rai-license-posture.instructions.md
       dest: .github/instructions/rai-planning/rai-license-posture.instructions.md
     - src: ../../.github/instructions/shared/coaching-patterns.instructions.md
@@ -7304,6 +7255,309 @@ stimuli:
     name: requested-task-selected
     config:
       pattern: ^\s*2607\s*$
+- name: rpi-agent-first-task-assessment-defaults
+  prompt: |
+    This is a contained, response-only lifecycle-policy regression, not native
+    RPI execution. Read `policy/rpi-agent.agent.md` and `policy/rpi.SKILL.md`.
+    Consider the first task in
+    a new automatic session. The user has not skipped either assessment.
+    Select the default settings. Return exactly two lines: `Critique: run|skip`
+    and `Review: run|skip`. Do not execute phases or write files.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/hve-core/rpi-agent.agent.md
+      dest: policy/rpi-agent.agent.md
+    - src: ../../.github/skills/rpi/rpi/SKILL.md
+      dest: policy/rpi.SKILL.md
+  tags:
+    category: agent-behavior
+    advisory: "true"
+    shape: rpi-assessment-policy
+    prompt_sha256: b39ca8f00147ebf635eab4502d834d08678f702d811ee183725cb0d7fb54d1f1
+    agent: rpi-agent
+  graders:
+  - type: output-matches
+    name: first-task-runs-both-assessments
+    config:
+      pattern: (?i)^\s*Critique:[ \t]*run[ \t]*\r?\nReview:[ \t]*run\s*$
+- name: rpi-agent-child-assessment-defaults
+  prompt: |
+    This is a contained, response-only lifecycle-policy regression, not native
+    RPI execution. Read `policy/rpi-agent.agent.md` and `policy/rpi.SKILL.md`.
+    The first task already
+    completed its critique and Review. A required child task is ready, and the
+    user has not requested more assessments. Select the child defaults.
+    Return exactly two lines: `Critique: run|skip` and `Review: run|skip`.
+    Do not execute phases or write files.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/hve-core/rpi-agent.agent.md
+      dest: policy/rpi-agent.agent.md
+    - src: ../../.github/skills/rpi/rpi/SKILL.md
+      dest: policy/rpi.SKILL.md
+  tags:
+    category: agent-behavior
+    advisory: "true"
+    shape: rpi-assessment-policy
+    prompt_sha256: 6d27effc7cea9ce75878cb53a9864da5bca6604b1d3b7c4874ee7bc217441644
+    agent: rpi-agent
+  graders:
+  - type: output-matches
+    name: child-skips-unrequested-assessments
+    config:
+      pattern: (?i)^\s*Critique:[ \t]*skip[ \t]*\r?\nReview:[ \t]*skip\s*$
+- name: rpi-agent-child-explicit-assessment-override
+  prompt: |
+    This is a contained, response-only lifecycle-policy regression, not native
+    RPI execution. Read `policy/rpi-agent.agent.md` and `policy/rpi.SKILL.md`.
+    The first task already
+    completed both assessments. For a required child task the user explicitly
+    requests another plan critique and another Review. Select the child
+    settings. Return exactly two lines: `Critique: run|skip` and
+    `Review: run|skip`. Do not execute phases or write files.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/hve-core/rpi-agent.agent.md
+      dest: policy/rpi-agent.agent.md
+    - src: ../../.github/skills/rpi/rpi/SKILL.md
+      dest: policy/rpi.SKILL.md
+  tags:
+    category: agent-behavior
+    advisory: "true"
+    shape: rpi-assessment-policy
+    prompt_sha256: a02188200291c4e632d58f1fa80a2307bb8b1cf80c11e5a18f535737ef606cd9
+    agent: rpi-agent
+  graders:
+  - type: output-matches
+    name: explicit-child-request-runs-both
+    config:
+      pattern: (?i)^\s*Critique:[ \t]*run[ \t]*\r?\nReview:[ \t]*run\s*$
+- name: rpi-agent-child-review-only-override
+  prompt: |
+    This is a contained, response-only lifecycle-policy regression, not native
+    RPI execution. Read `policy/rpi-agent.agent.md` and `policy/rpi.SKILL.md`.
+    The first task already
+    completed both assessments. For a required child task the user requests
+    another Review but does not request another critique. Select the child
+    settings. Return exactly two lines: `Critique: run|skip` and
+    `Review: run|skip`. Do not execute phases or write files.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/hve-core/rpi-agent.agent.md
+      dest: policy/rpi-agent.agent.md
+    - src: ../../.github/skills/rpi/rpi/SKILL.md
+      dest: policy/rpi.SKILL.md
+  tags:
+    category: agent-behavior
+    advisory: "true"
+    shape: rpi-assessment-policy
+    prompt_sha256: 399cd161ccf41484e8c83a22d1203f33031b76c17f2422b8d452a22561e32242
+    agent: rpi-agent
+  graders:
+  - type: output-matches
+    name: review-request-does-not-add-critique
+    config:
+      pattern: (?i)^\s*Critique:[ \t]*skip[ \t]*\r?\nReview:[ \t]*run\s*$
+- name: rpi-agent-interrupted-critique-continuation
+  prompt: |
+    This is a contained, response-only lifecycle-policy regression, not native
+    RPI execution. Read `policy/rpi-agent.agent.md`, `policy/rpi.SKILL.md`, and
+    `policy/rpi-plan.SKILL.md`. In the first task, Critique Disposition is
+    started but no result exists after its first interruption. The prerequisite
+    is unchanged and the user has not skipped the critique. Classify recovery
+    and planning readiness. Return exactly two lines:
+    `Recovery: resume-existing|start-additional` and `Readiness: ready|not-ready`.
+    Do not execute phases or write files.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/hve-core/rpi-agent.agent.md
+      dest: policy/rpi-agent.agent.md
+    - src: ../../.github/skills/rpi/rpi/SKILL.md
+      dest: policy/rpi.SKILL.md
+    - src: ../../.github/skills/rpi/rpi-plan/SKILL.md
+      dest: policy/rpi-plan.SKILL.md
+  tags:
+    category: agent-behavior
+    advisory: "true"
+    shape: rpi-assessment-policy
+    prompt_sha256: 3e8e9a5b20b63279e5fdebf81a0e3e59258b501e0a3d5106059d6179f63fa9d4
+    agent: rpi-agent
+  graders:
+  - type: output-matches
+    name: interrupted-critique-keeps-existing-assessment
+    config:
+      pattern: (?i)^\s*Recovery:[ \t]*resume-existing[ \t]*\r?\nReadiness:[ \t]*not-ready\s*$
+- name: rpi-agent-interrupted-review-continuation
+  prompt: |
+    This is a contained, response-only lifecycle-policy regression, not native
+    RPI execution. Read `policy/rpi-agent.agent.md`, `policy/rpi.SKILL.md`, and
+    `policy/rpi-review.SKILL.md`. The first task's canonical Review record is
+    started after an interruption. A stale session projection says completed,
+    but no finished Review exists. Classify recovery and which evidence
+    governs. Return exactly two lines:
+    `Recovery: resume-existing|start-additional` and `Evidence: canonical|projection`.
+    Do not execute phases or write files.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/hve-core/rpi-agent.agent.md
+      dest: policy/rpi-agent.agent.md
+    - src: ../../.github/skills/rpi/rpi/SKILL.md
+      dest: policy/rpi.SKILL.md
+    - src: ../../.github/skills/rpi/rpi-review/SKILL.md
+      dest: policy/rpi-review.SKILL.md
+  tags:
+    category: agent-behavior
+    advisory: "true"
+    shape: rpi-assessment-policy
+    prompt_sha256: 9e3f8784f565fd266be3b059ad9f52a52d56bfc0f80c8c10bff63e9b611669a6
+    agent: rpi-agent
+  graders:
+  - type: output-matches
+    name: interrupted-review-keeps-canonical-record
+    config:
+      pattern: (?i)^\s*Recovery:[ \t]*resume-existing[ \t]*\r?\nEvidence:[ \t]*canonical\s*$
+- name: rpi-agent-canvas-provider-ambiguity
+  prompt: |
+    This is a contained, response-only canvas-policy regression, not native
+    RPI execution. Read `policy/rpi-agent.agent.md` and `policy/rpi.SKILL.md`.
+    A capability lookup for
+    hve-core-rpi-workflow reports multiple providers:
+    plugin:hve-core:rpi-workflow and project:rpi-workflow. No Canvas decision
+    exists. Choose the next action and provider arguments for lookup and
+    opening. Return exactly three lines: `Action: retry|abandon`,
+    `Lookup provider: <id>`, and `Open provider: <id>`. Do not call canvas tools
+    or write files. If the file cannot be read, report the task as blocked
+    without inventing its declarations.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/hve-core/rpi-agent.agent.md
+      dest: policy/rpi-agent.agent.md
+    - src: ../../.github/skills/rpi/rpi/SKILL.md
+      dest: policy/rpi.SKILL.md
+  tags:
+    category: agent-behavior
+    advisory: "true"
+    shape: rpi-canvas-policy
+    prompt_sha256: 97e6afe14eebba6957bbe1bc87bb720ef856f28e4c5fec4f981327ad6572ba32
+    agent: rpi-agent
+  graders:
+  - type: output-matches
+    name: retry-with-consistent-project-provider
+    config:
+      pattern: (?i)^\s*Action:[ \t]*retry[ \t]*\r?\nLookup provider:[ \t]*project:rpi-workflow[ \t]*\r?\nOpen provider:[ \t]*project:rpi-workflow\s*$
+- name: rpi-agent-canvas-provider-retention
+  prompt: |
+    This is a contained, response-only canvas-policy regression, not native
+    RPI execution. Read `policy/rpi-agent.agent.md` and `policy/rpi.SKILL.md`.
+    The saved Canvas decision
+    records instance rpi-map and extensionId plugin:hve-core:rpi-workflow.
+    The user asks to bring that panel back. The host still offers both
+    plugin:hve-core:rpi-workflow and project:rpi-workflow. Select the instance
+    and provider. Return exactly two lines: `Instance: <id>` and
+    `Provider: <id>`. Do not call canvas tools or write files. If the file
+    cannot be read, report the task as blocked without inventing its
+    declarations.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/hve-core/rpi-agent.agent.md
+      dest: policy/rpi-agent.agent.md
+    - src: ../../.github/skills/rpi/rpi/SKILL.md
+      dest: policy/rpi.SKILL.md
+  tags:
+    category: agent-behavior
+    advisory: "true"
+    shape: rpi-canvas-policy
+    prompt_sha256: dba2bf93db33deefa674ee4b01146d2f3d3dbea7bdf5bb988bde60326864b928
+    agent: rpi-agent
+  graders:
+  - type: output-matches
+    name: reopen-with-retained-provider-and-instance
+    config:
+      pattern: (?i)^\s*Instance:[ \t]*rpi-map[ \t]*\r?\nProvider:[ \t]*plugin:hve-core:rpi-workflow\s*$
+- name: rpi-agent-canvas-provider-failure
+  prompt: |
+    This is a contained, response-only canvas-policy regression, not native
+    RPI execution. Read `policy/rpi-agent.agent.md` and `policy/rpi.SKILL.md`.
+    No Canvas decision exists.
+    After resolving provider ambiguity, the provider-qualified open fails
+    because the extension is disconnected; the host recommends reloading the
+    extension. There is no new evidence for another attempt. Decide whether
+    to retry immediately, what the user must hear, whether RPI work can
+    continue, and whether to record a current Canvas decision. Return exactly
+    four lines: `Retry: yes|no`, `Report: silent|reason-and-recovery`,
+    `RPI: continue|stop`, and `Record current canvas: yes|no`. Do not call
+    canvas tools or write files. If the file cannot be read, report the task
+    as blocked without inventing its declarations.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/hve-core/rpi-agent.agent.md
+      dest: policy/rpi-agent.agent.md
+    - src: ../../.github/skills/rpi/rpi/SKILL.md
+      dest: policy/rpi.SKILL.md
+  tags:
+    category: agent-behavior
+    advisory: "true"
+    shape: rpi-canvas-policy
+    prompt_sha256: 988beb8ae0ddab66577858a7d5211e3ee5f72918b35ca65aabef887b0bb16d4d
+    agent: rpi-agent
+  graders:
+  - type: output-matches
+    name: report-failure-without-blocking-or-false-success
+    config:
+      pattern: (?i)^\s*Retry:[ \t]*no[ \t]*\r?\nReport:[ \t]*reason-and-recovery[ \t]*\r?\nRPI:[ \t]*continue[ \t]*\r?\nRecord current canvas:[ \t]*no\s*$
+- name: rpi-agent-canvas-plugin-only
+  prompt: |
+    This is a contained, response-only canvas-policy regression, not native
+    RPI execution. Read `policy/rpi-agent.agent.md` and `policy/rpi.SKILL.md`.
+    In a downstream workspace
+    the only host-reported provider for hve-core-rpi-workflow is
+    plugin:hve-core:rpi-workflow. A saved Canvas decision from another host
+    names project:rpi-workflow, which is not offered here. Choose the provider
+    for opening and the evidence to retain after success. Return exactly two
+    lines: `Open provider: <id>` and `Saved provider: <id>`. Do not call canvas
+    tools or write files. If the file cannot be read, report the task as
+    blocked without inventing its declarations.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/hve-core/rpi-agent.agent.md
+      dest: policy/rpi-agent.agent.md
+    - src: ../../.github/skills/rpi/rpi/SKILL.md
+      dest: policy/rpi.SKILL.md
+  tags:
+    category: agent-behavior
+    advisory: "true"
+    shape: rpi-canvas-policy
+    prompt_sha256: 21095802bb71b16f2e61667fb1290372cf850e8b5697c284eec79585ded158e9
+    agent: rpi-agent
+  graders:
+  - type: output-matches
+    name: use-offered-plugin-instead-of-stale-project
+    config:
+      pattern: (?i)^\s*Open provider:[ \t]*plugin:hve-core:rpi-workflow[ \t]*\r?\nSaved provider:[ \t]*plugin:hve-core:rpi-workflow\s*$
+- name: rpi-plan-critic-conformance-d89dd31d
+  prompt: |
+    This is a contained, response-only critic-contract scenario, not a native
+    subagent invocation. Read `policy/rpi-plan-critic.agent.md`. Under that
+    contract, your lens assessment found that task P02-T03 omits requirement
+    FR-004. Who assigns that finding its `PC-xxx` ID and final severity? Choose
+    one: critique-parent, plan-critic, or implementer. Write no files. Return
+    only the chosen option.
+  agent_environment:
+    files:
+    - src: ../../.github/agents/hve-core/subagents/rpi-plan-critic.agent.md
+      dest: policy/rpi-plan-critic.agent.md
+  tags:
+    category: agent-behavior
+    kind: agent
+    target_artifact: .github/agents/hve-core/subagents/rpi-plan-critic.agent.md
+    advisory: "true"
+    prompt_sha256: d89dd31d71f420c1fceda95c670f1d475411a8942b7e68623fa64ef4dab15ddd
+    agent: rpi-plan-critic
+  graders:
+  - type: output-matches
+    name: critique-parent-owns-ids
+    config:
+      pattern: (?i)^\s*[`*'"]*critique-parent[`*'"]*[.!]?\s*$
 - name: rpi-researcher-return-only-suggestions
   prompt: |
     You found three documentation pages that answer the caller's bounded
@@ -7361,8 +7615,8 @@ stimuli:
     files:
     - src: ../../.github/agents/security/security-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: fixtures/security-planner-disclaimer-null-state.json
       dest: .copilot-tracking/security-plans/cadence-null/state.json
   tags:
@@ -7385,8 +7639,8 @@ stimuli:
     files:
     - src: ../../.github/agents/security/security-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: fixtures/security-planner-disclaimer-shown-state.json
       dest: .copilot-tracking/security-plans/cadence-shown/state.json
   tags:
@@ -7418,8 +7672,8 @@ stimuli:
     files:
     - src: ../../.github/agents/security/security-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: fixtures/security-planner-disclaimer-shown-state.json
       dest: .copilot-tracking/security-plans/cadence-shown/state.json
   tags:
@@ -7456,9 +7710,9 @@ stimuli:
         } catch { process.exit(1); }
 - name: security-planner-disclaimer-source-missing
   prompt: |
-    Start a new Security Planner project named `cadence-missing-source`. The required `disclaimer-language.instructions.md` file is unavailable. Follow the declared missing-source behavior and report what is blocked.
+    Start a new Security Planner project named `cadence-missing-source`. The required `disclaimer-language` skill is unavailable. Follow the declared missing-source behavior and report what is blocked.
 
-    Name the specific file you could not load, then say what this does to the session before any Phase 1 work.
+    Name the specific skill you could not load, then say what this does to the session before any Phase 1 work.
   agent_environment:
     files:
     - src: ../../.github/agents/security/security-planner.agent.md
@@ -7471,7 +7725,7 @@ stimuli:
   - type: output-matches
     name: missing-source-halts
     config:
-      pattern: (?is)(?=[\s\S]*disclaimer-language\.instructions\.md)(?=[\s\S]*(?:cannot|unable|unavailable|missing|could not|not found))(?=[\s\S]*(?:halt|stop|blocked))
+      pattern: (?is)(?=[\s\S]*disclaimer-language)(?=[\s\S]*(?:cannot|unable|unavailable|missing|could not|not found))(?=[\s\S]*(?:halt|stop|blocked))
   - type: output-matches
     name: no-phase-work
     config:
@@ -7490,8 +7744,8 @@ stimuli:
     files:
     - src: ../../.github/agents/security/security-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: fixtures/security-phase6/sample-service-state.json
       dest: .copilot-tracking/security-plans/sample-service/state.json
     - src: fixtures/security-phase6/sample-service-security-plan.md
@@ -7533,8 +7787,8 @@ stimuli:
     files:
     - src: ../../.github/agents/security/security-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: fixtures/security-phase6/sample-service-state.json
       dest: .copilot-tracking/security-plans/sample-service/state.json
     - src: fixtures/security-phase6/sample-service-security-plan.md
@@ -7599,8 +7853,8 @@ stimuli:
     files:
     - src: ../../.github/agents/security/security-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: ../../.github/instructions/security/identity.instructions.md
       dest: .github/instructions/security/identity.instructions.md
   tags:
@@ -7662,8 +7916,8 @@ stimuli:
     files:
     - src: ../../.github/agents/security/security-reviewer.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     skills:
     - ../../.github/skills/project-planning/security-planning
   tags:
@@ -7845,8 +8099,8 @@ stimuli:
     files:
     - src: ../../.github/agents/security/sssc-planner.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: ../../.github/instructions/security/sssc-planner.instructions.md
       dest: .github/instructions/security/sssc-planner.instructions.md
     - src: fixtures/security-planner-disclaimer-shown-state.json
@@ -7884,8 +8138,8 @@ stimuli:
     inline as your instructions describe and record the reduced rigor. No
     SBOM, provenance, signing, release, registry, or remote repository
     settings evidence is supplied. Do not run network, install, build,
-    publish, or scanner commands. The shared disclaimer file is staged at
-    `.github/instructions/shared/disclaimer-language.instructions.md`.
+    publish, or scanner commands. The shared disclaimer skill is staged at
+    `.github/skills/shared/disclaimer-language/SKILL.md`.
 
     Write the report under `.copilot-tracking/sssc-reviews/`, do not modify
     any other file, and report the report path.
@@ -7893,8 +8147,8 @@ stimuli:
     files:
     - src: ../../.github/agents/security/sssc-reviewer.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/shared/disclaimer-language.instructions.md
-      dest: .github/instructions/shared/disclaimer-language.instructions.md
+    - src: ../../.github/skills/shared/disclaimer-language/SKILL.md
+      dest: .github/skills/shared/disclaimer-language/SKILL.md
     - src: fixtures/sssc-smoke/package.fixture.json
       dest: subject/package.json
     - src: fixtures/sssc-smoke/release-workflow.fixture
@@ -8122,8 +8376,8 @@ stimuli:
     files:
     - src: ../../.github/agents/security/sssc-reviewer.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/security/vex-generation.instructions.md
-      dest: .github/instructions/security/vex-generation.instructions.md
+    - src: ../../.github/skills/security/vex/references/vex-generation.md
+      dest: .github/skills/security/vex/references/vex-generation.md
     skills:
     - ../../.github/skills/security/vex
   tags:
@@ -8151,8 +8405,8 @@ stimuli:
     files:
     - src: ../../.github/agents/security/sssc-reviewer.agent.md
       dest: .github/copilot-instructions.md
-    - src: ../../.github/instructions/security/vex-generation.instructions.md
-      dest: .github/instructions/security/vex-generation.instructions.md
+    - src: ../../.github/skills/security/vex/references/vex-generation.md
+      dest: .github/skills/security/vex/references/vex-generation.md
     skills:
     - ../../.github/skills/security/vex
   tags:
@@ -8264,11 +8518,11 @@ stimuli:
   - type: output-matches
     name: arch-research-unavailable-stops
     config:
-      pattern: (?is)(unavailable|blocked|unresolved).*(stop|pause|cannot|do not).*(recommend|conclusion|dependent)
+      pattern: (?is)(?:\b(?:cannot|can not|will not|do not|unable to|not able to|should not|can't|can’t|won't|won’t|don't|don’t|should(?:n['’]t))\b[^.?!\n]{0,60}\b(?:recommend|recommends|recommended|recommending|recommendation|recommendations|choose|pick|select|conclude|concludes|concluded|conclusion|conclusions)\b|\b(?:recommend|recommends|recommended|recommending|recommendation|recommendations|conclude|concludes|concluded|conclusion|conclusions|decision|choice)\b[^.?!\n]{0,80}\b(?:stop|stops|stopped|pause|pauses|paused|blocked|halt|halts|halted|on hold|wait|waits|deferred)\b|\b(?:stop|stops|pause|pauses|block|blocks|halt|halts|hold|holds)\b[^.?!\n]{0,60}\b(?:recommend|recommends|recommended|recommending|recommendation|recommendations|conclude|concludes|concluded|conclusion|conclusions|decision|choice)\b)
   - type: output-matches
     name: arch-research-unavailable-no-memory
     config:
-      pattern: (?is)(training data|model memory).*(not|cannot|do not|instead of|substitute|substituting)
+      pattern: (?is)(?:\b(?:training data|model memory|memory)\b[^.?!\n]{0,80}\b(?:not|cannot|will not|do not|is not|instead of|substitute|substitutes|substituting|substitution|unreliable|insufficient|can't|can’t|won't|won’t|don't|don’t|isn't|isn’t)\b|\b(?:not|cannot|will not|do not|should not|refuse|decline|can't|can’t|won't|won’t|don't|don’t|should(?:n['’]t))\b[^.?!\n]{0,80}\b(?:training data|model memory|memory)\b)
   - type: output-matches
     name: arch-research-unavailable-no-current-fact-claim
     config:
@@ -8347,8 +8601,9 @@ stimuli:
     recommendation `C1`. Preserve evidence `E1` and the staged Research
     artifact path. Perform the review now, write the canonical
     Architecture Review Record for synthetic date `2026-09-21` with a
-    disposition for both focus areas, then prepare the existing ADR Creation
-    and RPI Plan handoffs from that record.
+    disposition for both focus areas, then suggest the next steps for
+    recording the decision in an ADR and for planning the work, each
+    starting from that record.
   agent_environment:
     files:
     - src: ../../.github/agents/project-planning/system-architecture-reviewer.agent.md
@@ -8378,7 +8633,7 @@ stimuli:
   - type: transcript-matches
     name: architecture-handoffs-use-record-path
     config:
-      pattern: (?is)(ADR Creation|Create ADR).*\.copilot-tracking[/\\]reviews[/\\]architecture[/\\]2026-09-21[/\\]synthetic-queue-architecture-review\.md.*(RPI Plan|Create Plan).*\.copilot-tracking[/\\]reviews[/\\]architecture[/\\]2026-09-21[/\\]synthetic-queue-architecture-review\.md
+      pattern: (?is)^(?=[\s\S]*?(?:ADR[- ]Creator|ADR[- ]Creation|Create ADR|adr[- ]author))(?=[\s\S]*?(?:rpi[- ]plan|Create Plan|RPI Agent))(?=[\s\S]*?\.copilot-tracking[/\\]reviews[/\\]architecture[/\\]2026-09-21[/\\]synthetic-queue-architecture-review\.md)
 - name: ux-ui-designer-problem-framing-route
   prompt: |
     Project `operations-dashboard`: help me work out what the actual problem is

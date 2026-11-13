@@ -3,7 +3,7 @@ title: rpi-plan
 description: Create or resume an evidence-based RPI implementation plan with an optional independent critique. Use when a task needs an implementation plan or an existing plan needs revision.
 sidebar_position: 4
 author: Microsoft
-ms.date: 2026-09-28
+ms.date: 2026-10-14
 ms.topic: reference
 keywords:
   - skill
@@ -28,20 +28,32 @@ Create or resume an evidence-based RPI implementation plan with an optional inde
 
 ## When to use it
 
-Use `rpi-plan` when adequate evidence exists and the work needs a sequenced, verifiable plan before implementation. The skill writes one plan under `.copilot-tracking/plans/` with a stable task ID, `Pxx` phases, and `Pxx-Txx` tasks. The plan leads with an executive summary and a diagrammed Phase Checklist; each task carries `Goals:`, `Requirements:`, `Details:`, `References:`, and `Dependencies:` blocks.
+Use `rpi-plan` when adequate evidence exists and the work needs a sequenced, verifiable plan before implementation. The skill writes one plan under `.copilot-tracking/plans/` with a stable task ID, `Pxx` phases, and `Pxx-Txx` tasks. The plan leads with an executive summary and a Phase Checklist that opens with a change map; each task carries `Goals:`, `Requirements:`, `Details:`, `References:`, and `Dependencies:` blocks.
 
-The Phase Checklist opens with **Before** and **After** Mermaid diagrams comparing the
-evidence-backed starting state with the intended result of all phases. Each phase highlights its
-changes within the After view, including labeled removal context when needed. Diagrams inherit the
-renderer's light or dark theme, use readable sans-serif labels, and pair custom highlight fills
-with explicit contrasting text colors.
+The change map is an **After** Mermaid diagram of the intended result of all phases, with a
+**Before** diagram of the starting state only when the plan changes how parts connect. It answers
+one question in about 10 parts and 4 boxes: what changes, and how the changed parts connect to the
+code around them. Boxes stand for the folders, files, or documents where changes land and read as
+layers, left to right by default, with every arrow pointing from the part that acts to the part it
+acts on and labeled with a verb. In After, a new or changed part shows its name in bold, with code
+names in `<code>`, one short clause on what it does after the change, and a tag line such as
+`changed · P02, P03` that names the phases making the change; in Before, a changed or removed part
+shows its bold name and tag line. Dashed, thick, and dotted borders mark new, changed, and removed
+parts. A key and a two- or three-sentence walk-through follow After, and a plan that changes only
+one or two parts and no connections names them in a sentence instead. Each phase names its
+parts on a `Changes in the map:` line. Every diagram carries `accTitle` and `accDescr` and sets no
+fills, fonts, init line, or edge IDs, so it inherits the renderer's light or dark theme and its
+sans-serif labels.
 
 Planning owns two internal steps. It activates [rpi-research](rpi-research) only for a demonstrated
 readiness gap, and runs [rpi-plan-critique](rpi-plan-critique) by default once the plan is
 implementation-ready. You can skip the critique; the planner records it as skipped rather than
-failed. A follow-up critique after corrections is optional, and the planner runs one when
-corrections substantially change requirements, scope, or architecture, or when you ask. Confirmed
-user direction outranks critique advice.
+failed. A plan gets at most one critique: corrections and later plan changes do not start another,
+and a follow-up critique runs only when you ask. When a correction changes requirements, scope, or
+architecture, the planner says so at closeout so you can decide whether to ask for one. Set `critique-effort=` to choose the reasoning effort
+of the critique's lens assessments; otherwise the critique picks it per lens. Pass `subagents=none` to plan and critique
+without subagents. Confirmed user
+direction outranks critique advice.
 
 The planner drafts every phase itself. Before drafting, it looks for skills and subagents whose descriptions say they are used during planning or with `rpi-plan` and follows each description's guidance on when and how to use it; no subagent is required.
 
@@ -75,7 +87,7 @@ Reach for a different asset when:
 /rpi-plan task=blob-storage research=.copilot-tracking/research/2026-09-04/blob-storage-research.md
 ```
 
-The skill sends one `RPI Plan` opening with the interpreted goal, starting evidence, and decision state, drafts the phases, adds the Phase Checklist diagrams, and runs the critique once the plan is ready. Its final response summarizes readiness rather than restating the plan:
+The skill sends one `RPI Plan` opening with the interpreted goal, starting evidence, and decision state, drafts the phases, adds the change map, and runs the critique once the plan is ready. Its final response summarizes readiness rather than restating the plan:
 
 ```text
 * Planning execution: Complete; Planning Readiness: Ready
@@ -111,3 +123,5 @@ The planner records the kind of interruption, such as a session timeout or a mis
 ### Stop when corrections make no progress
 
 Before another revision or follow-up critique, the planner compares earlier plan versions, corrections, and unresolved findings. If a correction is reverted, findings oscillate, or the same required findings return without material progress, planning stops as Revise with the exact clearing action. A new session or task does not reset this check.
+
+When most new findings in a follow-up critique come from text the last revision added, the planner stops revising: it resolves Critical and High findings with the smallest correction and accepts the rest as residual risk.
